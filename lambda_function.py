@@ -1,35 +1,32 @@
 import os
 import json
 import logging
-import openai  # usiamo il client openai ma puntato a OpenRouter
+import openai  # client compatibile OpenAI, ma puntato a OpenRouter
 
-# ---------- CONFIG LOGGING ----------
+# ---------- LOGGING ----------
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# ---------- OPENROUTER API CONFIG ----------
-# Imposta questa variabile in Lambda:
+# ---------- OPENROUTER CONFIG ----------
+# Imposta questa env var nella Lambda:
 #   OPENROUTER_API_KEY = "sk-or-v1-...."
-openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Configuriamo il client openai per parlare con OpenRouter
-openai.api_key = openrouter_api_key
-openai.base_url = "https://openrouter.ai/api/v1"
+openai.api_key = OPENROUTER_API_KEY
+# ATTENZIONE: con openai==0.28 si usa api_base, NON base_url
+openai.api_base = "https://openrouter.ai/api/v1"
 
-# Scegli il modello che vuoi usare da OpenRouter
-# Esempi possibili:
-#   "deepseek/deepseek-chat"
-#   "meta-llama/llama-3.1-70b-instruct"
-#   "openai/gpt-4o-mini"
-AURA_MODEL = "openai/gpt-4o-mini"
+# Modello da usare su OpenRouter
+AURA_MODEL = "deepseek/deepseek-chat-v3.1"
 
 
-# ---------- HELPER: CALL AURA VIA OPENROUTER ----------
+# ---------- HELPER: CHIAMATA AURA (DEEPSEEK SU OPENROUTER) ----------
 def chatgpt_response(text: str) -> str:
     """
-    Invia il testo utente ad Aura (via OpenRouter) e ritorna la risposta.
+    Invia il testo dell’utente ad Aura (DeepSeek via OpenRouter) e ritorna la risposta.
     """
-    if not openrouter_api_key:
+    if not OPENROUTER_API_KEY:
         logger.error("OPENROUTER_API_KEY non impostata")
         return "Mi dispiace, il servizio di intelligenza artificiale non è configurato correttamente."
 
@@ -50,7 +47,7 @@ def chatgpt_response(text: str) -> str:
         ai_text = response.choices[0].message["content"]
         return ai_text.strip()[:7900]  # taglio difensivo per Alexa
     except Exception as e:
-        logger.exception("Errore durante la chiamata a OpenRouter")
+        logger.exception("Errore durante la chiamata a OpenRouter / DeepSeek")
         return "Mi dispiace, c'è stato un errore interno con il motore di intelligenza artificiale."
 
 
@@ -122,7 +119,7 @@ def lambda_handler(event, context):
                 should_end_session=False,
             )
 
-        # ---- FallbackIntent → chat libera con Aura ----
+        # ---- FallbackIntent → chat libera con Aura (DeepSeek) ----
         if intent_name == "AMAZON.FallbackIntent":
             slots = intent.get("slots", {})
             spoken_value = ""
