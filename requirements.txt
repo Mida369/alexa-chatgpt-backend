@@ -1,5 +1,5 @@
-flask
-gunicorn
-openai>=1.0.0
+openai==0.28.0
+
+
 
 
