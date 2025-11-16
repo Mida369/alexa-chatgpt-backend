@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: alexa-backend
-    env: python
-    region: frankfurt
-    buildCommand: ""
-    startCommand: "gunicorn app:app"
